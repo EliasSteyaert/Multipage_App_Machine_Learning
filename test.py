@@ -87,10 +87,41 @@ if uploaded_files:
                 relevant_columns = pd.concat([topTables[[gene_name]], cpm_columns], axis=1)  # Include the gene name column
                 # Reset the index to remove the default index
                 relevant_columns.reset_index(drop=True, inplace=True)
-                st.write("Relevant Columns After Adjustments:", relevant_columns.head(), use_container_width=True)
-                
+                #st.write("Relevant Columns After Adjustments:", relevant_columns.head(), use_container_width=True)
 				#ENDING ON TRYING TO DELETE THE GHOST COLUMN AT THE RELEVENT COLUMNS PART
 
-                # Optionally, store relevant_columns in a variable for further use
+
+				#converting to one "data" dataframe
+                # Step 1: Set the 'Sample_ID' as index in `table1`
+                targets.set_index(sample_id_col, inplace=True)
+                # Step 2: Filter topTables to keep only the gene IDs and relevant CPM columns
+                topTables_filtered = topTables[[gene_name] + new_column_names]
+                # Step 4: Set 'Ensemble_gene_id' as index in table2_filtered
+                topTables_filtered.set_index(gene_name, inplace=True)
+				# Step 5: Transpose table2_filtered so that each sample ID becomes a row, and each gene becomes a column
+                topTables_transposed = topTables_filtered.transpose()
+				# Step 6: Join the health status from table1 with the transposed table2
+                data = topTables_transposed.join(targets[illness_status_col])
+                #st.write("First 4 rows of the dataframe:", data.head(4), use_container_width=True)
+				
+			
+				# Check the resulting merged data structure
+                #st.write("New dataframe:", data.head(), use_container_width=True)
+				# Define how many columns to show from the start and end
+                num_display_cols = 2
+                num_display_rows = 4
+                
+				# Select the first `num_display_rows` rows, first `num_display_cols` columns, and last `num_display_cols` columns
+                display_data = pd.concat([
+                    data.iloc[:num_display_rows, :num_display_cols],  # First two columns of the first four rows
+                    pd.DataFrame({f"...": ["..."] * num_display_rows}),  # Ellipsis to indicate skipped columns
+                    data.iloc[:num_display_rows, -num_display_cols:]  # Last two columns of the first four rows
+                ], axis=1)
+				
+				# Display the modified DataFrame in Streamlit
+                st.write("First 4 rows of the new dataframe (with skipped columns in between):", display_data.head(4), use_container_width=True)
+				
+				
+				# Optionally, store relevant_columns in a variable for further use
                 # This could be done for further processing or machine learning steps
 

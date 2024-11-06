@@ -73,7 +73,7 @@ if uploaded_files:
 
                     # Check each header in the topTables DataFrame
                     for header in topTables.columns:
-                        if pattern.match(header):
+                        if pattern.match(str(header)):
                             # Map old header name to the new sample ID
                             rename_dict[header] = sample_id
                             new_column_names.append(sample_id)  # Store the new name
@@ -83,8 +83,13 @@ if uploaded_files:
                     topTables.rename(columns=rename_dict, inplace=True)
 
                 # Step 4: Create a new DataFrame with only the relevant columns
-                relevant_columns = topTables[new_column_names].copy()  # Copy only the renamed columns
-                st.write("Relevant Columns:", relevant_columns.head())
+                cpm_columns = topTables[new_column_names].copy()  # Copy only the renamed columns
+                relevant_columns = pd.concat([topTables[[gene_name]], cpm_columns], axis=1)  # Include the gene name column
+                # Reset the index to remove the default index
+                relevant_columns.reset_index(drop=True, inplace=True)
+                st.write("Relevant Columns After Adjustments:", relevant_columns.head(), use_container_width=True)
+                
+				#ENDING ON TRYING TO DELETE THE GHOST COLUMN AT THE RELEVENT COLUMNS PART
 
                 # Optionally, store relevant_columns in a variable for further use
                 # This could be done for further processing or machine learning steps
