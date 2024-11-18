@@ -321,8 +321,8 @@ if 'data' in locals():
 
 
     # Storing the data in 'X' and 'y'
-    X=data.iloc[:,0:-1]
-    y=data.iloc[:,-1]
+    X=data.iloc[:, 1:-1]
+    y=data.iloc[:, -1]
 
     # Step 1: Mutual Information Feature Selection with slider
     st.header("Mutual Information-Based  Feature Selection")
@@ -332,7 +332,6 @@ if 'data' in locals():
     max_value=X.shape[1],
     value=min(300, X.shape[1])  # Default to 20 or max available features
     )
-    
     #### Automatic method
     #let's encode target labels (y) with values between 0 and n_classes-1.
     #encoding will be done using the LabelEncoder
@@ -763,4 +762,43 @@ else:
                    # This could be done for further processing or machine learning steps
 # if 'data' in locals():
                     
-#if 'test_data' in locals():
+if 'test_data' in locals():
+
+    sample_ids = test_data.iloc[:, 0]  # Extract the sample ID column
+    X_test = test_data.iloc[:, 1:]    # Exclude the sample ID column
+
+    #select top n features. lets say 300.
+    #you can modify the value and see how the performance of the model changes
+    # n_features=300
+    
+    selected_features = X_train_selected.columns  # Get selected feature names
+    # In the prediction part
+    test_data_selected = X_test[selected_features]
+    #test_data_selected = X_test.iloc[:, selected_scores_indices]
+
+   # Align test data to the training feature set
+    if set(X_train_selected.columns) != set(test_data_selected.columns):
+        st.warning("Feature names in the test data do not match those used during training. Aligning features...")
+
+        # Reindex test data to match the training features
+        test_data_selected = test_data_selected.reindex(columns=X_train_selected.columns, fill_value=0)
+        st.write("Test data successfully re-aligned with training features.")
+    else:
+        st.write("Test data features match training data features. No alignment needed.")
+    # Apply the scaler directly (already trained on the same feature set)
+    test_data_scaled = min_max_scaler.transform(test_data_selected)
+
+    # Apply PCA transformation if it was part of the pipeline
+    test_data_pca = pca.transform(test_data_scaled)
+
+    st.write("The data is succesfully gone through the Feature Selection, the Data Scaler and the PCA steps.")
+
+    # Make predictions using the pre-trained model
+    predictions = model.predict(test_data_pca)
+
+    results = pd.DataFrame({'Sample_ID': sample_ids, 'Prediction': predictions})
+    # Show the predictions
+    st.write("Sample ID's + Predictions:")
+    st.write(results)
+else:
+    st.error("The prediction couldn't be done.")
