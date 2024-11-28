@@ -71,8 +71,8 @@ else:
                     st.write("Processing data where each sample is in a row:")
 
                     # Request user inputs for row-based identifiers
-                    illness_status_col = st.text_input("Enter the column name that indicates patient illness status:")
-                    sample_id_col = st.text_input("Enter the column name that holds sample IDs:")
+                    illness_status_col = st.selectbox("Enter the column name that indicates patient illness status:", data_one_file.columns)
+                    sample_id_col = st.selectbox("Enter the column name that holds sample IDs:", data_one_file.columns)
 
                     # Ensure that the input columns are in the DataFrame
                     if illness_status_col in data_one_file.columns and sample_id_col in data_one_file.columns:
@@ -149,7 +149,7 @@ else:
                             # Extract the columns from the data
                             sample_ids = data_one_file[sample_id_col]
                             illness_status = data_one_file[illness_status_col]
-
+                            st.session_state.illness_status = illness_status
                             # Create the new dataframe with the required order
                             data = pd.concat([sample_ids, data_one_file[gene_expression_columns], illness_status], axis=1)
                             data = data.rename(columns={sample_id_col: "Sample_ID", illness_status_col: "status"})
@@ -184,12 +184,15 @@ else:
 
                # Reference the dataframes based on user selection
                topTables = file_settings[data_type_topTables]["dataframe"]
+               st.session_state.topTables = topTables
+               
                targets = file_settings[data_type_targets]["dataframe"]
 
                # Column inputs for illness status, sample IDs and gene_names
-               gene_names = st.text_input("Enter the column name in the gene expression table that holds the gene names or ID's:")
-               illness_status_col = st.text_input("Enter the column name in sample data that indicates patient illness status:")
-               sample_id_col = st.text_input("Enter the column name in sample data that holds sample IDs:")
+               gene_names = st.selectbox("Enter the column name in the gene expression table that holds the gene names or ID's:", topTables.columns)
+               st.session_state.gene_names = gene_names
+               illness_status_col = st.selectbox("Enter the column name in sample data that indicates patient illness status:", targets.columns)
+               sample_id_col = st.selectbox("Enter the column name in sample data that holds sample IDs:", targets.columns)
 
                # Step 3: Data Processing - Find matching headers and rename them
                if illness_status_col in targets.columns and sample_id_col in targets.columns:    
@@ -241,6 +244,7 @@ else:
                         st.warning("Warning: Some gene names did not match any sample IDs, resulting in empty cells.")
 	    			# Step 6: Join the health status from table1 with the transposed table2
                    data = gene_name_and_CPM.join(targets[illness_status_col])
+                   st.session_state.illness_status = targets[illness_status_col] 
                    # Rename the columns for sample ID and illness status
                    data = data.rename(columns={sample_id_col: "Sample_ID", illness_status_col: "status"})
                    #st.write("First 4 rows of the dataframe:", data.head(4), use_container_width=True)
@@ -262,6 +266,7 @@ else:
     
 	    			# Display the modified DataFrame in Streamlit
                    st.write("First 4 rows of the new dataframe (with skipped columns in between):", display_data.head(4), use_container_width=True)
+                   st.write(data.shape)
                else:
                     st.error("One or more of the specified columns do not exist in the database")
 
