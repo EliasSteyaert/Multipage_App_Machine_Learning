@@ -50,7 +50,7 @@ if "data" in st.session_state and st.session_state["data"] is not None:
     st.pyplot(fig)
     
     # Radio button for single selection between two options
-    st.write("Is the data distributed?")
+    st.write("Is the data evenly distributed?")
     sample_distribution = st.radio("Do you want to balance the data more with an oversampling technique (SMOTE)", options=["Yes", "No"])
 
     if sample_distribution == "Yes":
@@ -71,7 +71,8 @@ if "data" in st.session_state and st.session_state["data"] is not None:
     "Select the number of features you want when performing Feature Selection",
     min_value=1,
     max_value=X.shape[1],
-    value=min(300, X.shape[1])  # Default to 20 or max available features
+    value=min(300, X.shape[1]),  # Default to 20 or max available features
+    step=25
     )
     #### Automatic method
     #let's encode target labels (y) with values between 0 and n_classes-1.
@@ -80,7 +81,9 @@ if "data" in st.session_state and st.session_state["data"] is not None:
     label_encoder.fit(y)
     y_encoded=label_encoder.transform(y)
     labels=label_encoder.classes_
+    st.session_state.labels = labels
     classes=np.unique(y_encoded)
+    st.session_state.classes = classes
     st.write("The automatic label encoder step was succesfull:")
     st.write(f"The lablels are {labels} and the classes are {classes}.")
     
@@ -94,8 +97,6 @@ if "data" in st.session_state and st.session_state["data"] is not None:
     selected_scores_indices=np.argsort(MI)[::-1][0:n_features]
     
     X_train_selected=X_train.iloc[:, selected_scores_indices]
-    st.session_state.X_train_selected = X_train_selected
-
     X_test_selected=X_test.iloc[:, selected_scores_indices]
 
     st.write("The Feature Selection step was successful.")
@@ -112,6 +113,7 @@ if "data" in st.session_state and st.session_state["data"] is not None:
     X_train_pca = pca.fit_transform(X_train_norm)
     X_test_pca = pca.transform(X_test_norm)
     st.session_state.pca = pca
+    st.session_state.X_train_pca = X_train_pca
 
     st.write("The Principal Component Analysis was succcessful.")
 
@@ -131,15 +133,19 @@ if "data" in st.session_state and st.session_state["data"] is not None:
         ax.set_xlabel("Classes")
         ax.set_ylabel("Number of Samples")
         st.pyplot(fig)
+
     
 
     elif sample_distribution == "No":
         X_train_resampled = X_train_pca
         y_train_resampled = y_train
 
+    st.session_state.y_train_resampled = y_train_resampled
+    st.session_state.X_train_resampled = X_train_resampled
 
     st.write("What type of classification algorithm do you want to use?")
     Classification_type = st.radio("Select classification type", options=["Logistic Regression (L1)", "Random Forest Classifier", "One Vs Rest Classifier"])
+    st.session_state.Classification_type = Classification_type
 
     if Classification_type == "Logistic Regression (L1)":
         st.write("Processing the data with the Logistic Regression:")
@@ -158,16 +164,15 @@ if "data" in st.session_state and st.session_state["data"] is not None:
         # Look at the confusion matrix, what do the different values mean in this case?
         # Hint: if you don't know the syntax/meaning for a specific funtion, you can always look this up
         # in jupyter notebook by executing "?function_name"
-        st.write("Confusion matrix:")
-        st.table(confusion_matrix(y_true=y_test,y_pred=y_pred))
-        st.divider()
+        conf_matrix = (confusion_matrix(y_true=y_test,y_pred=y_pred))
+ 
         
         # Show the accuracy, recall, precision and f1-score for the test set
         # Note, sometimes you need to supply a positive label (if not working with 0 and 1)
         # supply this with "pos_label='label'", in this case, the malign samples are the positives
         report = classification_report(y_test, y_pred, output_dict=True)
         report_df = pd.DataFrame(report).transpose()
-        st.table(report_df)
+
 
     elif Classification_type == "Random Forest Classifier":
         st.write("Processing the data with the Random Forest Classifier:")
@@ -201,36 +206,31 @@ if "data" in st.session_state and st.session_state["data"] is not None:
 
         # Confusion matrix
         conf_matrix = confusion_matrix(y_true=y_test, y_pred=y_pred)
-        st.write("Confusion Matrix:")
-        st.table(conf_matrix)
 
         # Classification report
         report = classification_report(y_test, y_pred, output_dict=True)
         report_df = pd.DataFrame(report).transpose()
-        st.write("Classification Report:")
-        st.table(report_df)
-
-        # Feature Importances (Optional)
-        st.write("Feature Importances:")
 
         # Extract feature importances from the random forest model
         feature_importances = model.feature_importances_
+        st.session_state.feature_importances = feature_importances
 
-        # Create a DataFrame of feature importances
-        feature_importances_df = pd.DataFrame({
-            "Feature": [f"PC{i+1}" for i in range(X_train_pca.shape[1])],
-            "Importance": feature_importances
-        }).sort_values(by="Importance", ascending=False)
+        ## Create a DataFrame of feature importances
+        #feature_importances_df = pd.DataFrame({
+        #    "Feature": [f"PC{i+1}" for i in range(X_train_pca.shape[1])],
+        #    "Importance": feature_importances
+        #}).sort_values(by="Importance", ascending=False)
+        #st.session_state.pca_options = [f"PC{i+1}" for i in range(X_train_pca.shape[1])]
 
-        # Display top features in a table
-        st.table(feature_importances_df.head(20))  # Show top 20 features
-
-        # Visualize the top features in a bar plot
-        plt.figure(figsize=(10, 6))
-        plt.barh(feature_importances_df['Feature'][:20], feature_importances_df['Importance'][:20])  # top 20 features
-        plt.xlabel('Feature Importance')
-        plt.title('Random Forest Feature Importances')
-        st.pyplot(plt)
+        ## Display top features in a table
+        #st.table(feature_importances_df.head(20))  # Show top 20 features
+#
+        ## Visualize the top features in a bar plot
+        #plt.figure(figsize=(10, 6))
+        #plt.barh(feature_importances_df['Feature'][:20], feature_importances_df['Importance'][:20])  # top 20 features
+        #plt.xlabel('Feature Importance')
+        #plt.title('Random Forest Feature Importances')
+        #st.pyplot(plt)
 
     elif Classification_type == "One Vs Rest Classifier":
         st.write("Processing the data with the One VS Rest Classifier:")
@@ -246,16 +246,32 @@ if "data" in st.session_state and st.session_state["data"] is not None:
         st.write("Accuracy on the test set:", model.score(X_test_pca, y_test))
 
         # Confusion matrix
-        st.write("Confusion matrix:")
-        st.table(confusion_matrix(y_true=y_test, y_pred=y_pred))
+        conf_matrix = (confusion_matrix(y_true=y_test, y_pred=y_pred))
 
         # Classification report
         report = classification_report(y_test, y_pred, output_dict=True)
         report_df = pd.DataFrame(report).transpose()
-        st.write("Classification report:")
-        st.table(report_df)
 
+    n_classes = len(classes)
+    if n_classes == 2:
+        y_pred_proba = model.predict_proba(X_test_pca)[:, 1]
 
+    else:
+        y_pred_proba = model.predict_proba(X_test_pca)
+        
+    gene_names = X_train.columns[selected_scores_indices]
+    st.session_state.X_train_selected = X_train_selected 
+    st.session_state.conf_matrix = conf_matrix
+    st.session_state.report_df = report_df
+    st.session_state.y_pred_proba = y_pred_proba
+    st.session_state.y_test = y_test
+    st.session_state.gene_names = gene_names
+
+    pca_components = pca.components_
+    st.session_state.pca_components = pca_components
+
+    st.write(selected_scores_indices)
+    st.write(gene_names)
 
 else:
     st.error("The data is not ready for machine learning. Please upload and process your data on the previous page.")
