@@ -48,12 +48,12 @@ if "data" in st.session_state and st.session_state["data"] is not None:
     )
 
     # Create a new column to indicate whether genes are inside the thresholds
-    vulcano_plot_data['inside_threshold'] = (
-        (vulcano_plot_data["Log Fold Change"].abs() < log_fc_threshold) & 
-        (vulcano_plot_data["Minus log10 P-Value"] < p_val_threshold)
+    vulcano_plot_data['outside_threshold'] = (
+        (vulcano_plot_data["Log Fold Change"].abs() > log_fc_threshold) & 
+        (vulcano_plot_data["Minus log10 P-Value"] > p_val_threshold)
     )
-
-    genes_inside_threshold = vulcano_plot_data[vulcano_plot_data['inside_threshold']]['Gene Names'].tolist()
+    genes_outside_threshold = vulcano_plot_data[vulcano_plot_data['outside_threshold']]['Gene Names'].tolist()
+    amount_outside_genes = len(genes_outside_threshold)
 
     ## Display the resulting DataFrame
     #st.write("Combined Data for Volcano Plot:")
@@ -81,20 +81,45 @@ if "data" in st.session_state and st.session_state["data"] is not None:
     # Clean column names in the DataFrame
     data.columns = data.columns.str.strip()  # Remove leading/trailing spaces   
 
-    # Ensure genes_inside_threshold is also stripped
-    genes_inside_threshold = [gene.strip() for gene in genes_inside_threshold]
+    # Ensure genes_inside_threshold is also stripped so that a simple space can not create confusion and so an error for the algorithm, but I don't think this is needed anymore
+    genes_outside_threshold = [gene.strip() for gene in genes_outside_threshold]
 
     # Radio button for single selection between two options
-    st.write("Do you want to drop the genes that don't show a significant expression?")
+    st.write("Do you want to drop the genes that fall out of the choosen thresholds (",amount_outside_genes,"amount of genes would remain)?")
     genes_usage = st.radio("Select your desired option:", options=["no", "yes"])
     if genes_usage == "yes":
         st.write("Processing data where the insignifcant genes gets dropped:")  
-        data = data.drop(genes_inside_threshold, axis=1, errors='ignore')
+        # data = data.drop(genes_inside_threshold, axis=1, errors='ignore')
+        # data = data.loc[:, data.columns.isin(genes_outside_threshold)]
+        # Identify the first and last columns
+        first_column = data.columns[0]
+        last_column = data.columns[-1]
+
+        # Retain the first and last columns and the ones in 'genes_inside_threshold'
+        columns_to_keep = [first_column] + \
+                          [col for col in data.columns if col in genes_outside_threshold] + \
+                          [last_column]
+
+        # Filter the DataFrame to retain only the desired columns
+        data = data.loc[:, data.columns.isin(columns_to_keep)]
+
+        # Check the updated DataFrame
+        st.write("Data after retaining specified genes while keeping first and last columns:")
+        st.write(data)
+
         st.session_state.data = data
         st.write("The shape of the data after dropping the genes inside the thresholds:", data.shape)
 
     elif genes_usage == "no":
-         st.write("The data remains unchanged in this step.")    
+         st.write("The data remains unchanged in this step.")
+    
+    column_names_list = data.columns[1:].tolist()
+    column_to_check = "ensembl_gene_id"
+    filtered_topTables = topTables[topTables[column_to_check].isin(column_names_list)]
+
+    output_file = "output.csv"
+    filtered_topTables.to_csv(output_file, index=False)  # `index=False` prevents the index column from being saved
+    st.write(f"Data saved to {output_file}")
 
 else:
     st.error("Please complete the 'uploading data' page first.")
