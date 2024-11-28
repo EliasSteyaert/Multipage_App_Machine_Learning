@@ -3,6 +3,8 @@ import numpy as np
 import re
 import pandas as pd
 
+import io
+
 st.set_page_config(page_title="Predicting data")
 st.markdown("# Predicting new data")
 st.sidebar.header("Predicting New Data")
@@ -306,6 +308,31 @@ if "model" in st.session_state and st.session_state["model"] is not None:
         # Show the predictions
         st.write("Sample ID's + Predictions:")
         st.write(results)
+
+        # Convert DataFrame to CSV
+        csv_buffer = io.StringIO()
+        results.to_csv(csv_buffer, index=False)
+        csv_csv = csv_buffer.getvalue()  # Retrieve CSV content as a string
+        
+        st.download_button(
+            label="Download data as CSV",
+            data=csv_csv,
+            file_name="results.csv",
+            mime="text/csv"
+        )
+        
+        # Convert DataFrame to Excel for download
+        excel_buffer = io.BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+            results.to_excel(writer, index=False, sheet_name="Results")
+        excel_buffer.seek(0)  # Rewind the buffer
+        
+        st.download_button(
+            label="Download data as Excel",
+            data=excel_buffer,
+            file_name="results.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
     else:
         st.error("The prediction couldn't be done.")
 
