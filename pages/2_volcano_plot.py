@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 
+from styles import load_css
 
 st.set_page_config(page_title="Volcano plot")
 st.markdown("# Create a volcano plot.")
@@ -18,6 +19,8 @@ if "data" in st.session_state and st.session_state["data"] is not None:
     topTables = st.session_state["topTables"]
     gene_names = st.session_state["gene_names"]
 
+    load_css()
+
     log_fc_column = st.selectbox("Select the column with the desired logFc data:", topTables.columns)
     p_val_column = st.selectbox("Select the column with the desired P-value data:", topTables.columns)
     
@@ -30,20 +33,39 @@ if "data" in st.session_state and st.session_state["data"] is not None:
     
     vulcano_plot_data["Minus log10 P-Value"] = -np.log10(vulcano_plot_data["P-Value"])
 
+    st.markdown("""
+    <p>
+        <span class="tooltip">Choose the threshold that you want for the logFC: <span class="emoji">❓</span>
+            <span class="tooltiptext">LogFC (log fold change) measures the magnitude of change in gene expression. Adjust this to filter genes with significant changes.<br>
+                |logFC| ≥ 1 is commonly used, as it indicates a twofold change in expression between conditions (e.g., healthy vs. diseased).<br>
+                If the dataset is noisy or has subtle changes, you might lower the threshold to |logFC| ≥ 0.5.</span>
+        </span>
+    </p>
+    """, unsafe_allow_html=True)
     # Define thresholds
     log_fc_threshold = st.slider(
-    "Choose the threshold that you want for the logFC:",
+    label="",
     min_value=0.0,
     max_value=2.5,
     value=1.0,
     step=0.1
     )
     
+    st.markdown("""
+<p>
+    <span class="tooltip">Choose the threshold that you want for the -log10(P-value): <span class="emoji">❓</span>
+        <span class="tooltiptext">P-value indicates statistical significance. Lower values mean stronger evidence against the null hypothesis.<br>
+                If you want to be conservative and reduce the likelihood of false positives, a higher threshold is better. <br>
+                If you are exploring potential trends in the data and want to include genes with even marginal significance, you can use a lower threshold, such as 1.3, which corresponds to a P-value of ≤ 0.05. (2 corresponds to a P-value of ≤ 0.01)
+        </span>
+    </span>
+</p>
+""", unsafe_allow_html=True)
     p_val_threshold = st.slider(
-    "Choose the threshold that you want for the P-value:",
-    min_value=0.0,
-    max_value=5.0,
-    value=0.5,
+    label="",
+    min_value=0.00,
+    max_value=2.5,
+    value=1.3,
     step=0.1
     )
 
