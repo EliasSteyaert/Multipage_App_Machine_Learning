@@ -11,6 +11,7 @@ def load_css():
         color: inherit;  /* Inherit text color from parent */
         font-size: inherit;  /* Inherit font size */
         text-decoration: none;  /* Remove underline */
+        padding: 10px;
     }
     
     .emoji {
@@ -41,7 +42,7 @@ def load_css():
         margin-top: -10px;
     }
     .stSlider {
-        margin-top: -20px;  /* Reduce the space above the slider */
+        margin-top: -40px;  /* Reduce the space above the slider */
     }
     .tooltip:hover .tooltiptext {
         visibility: visible;
