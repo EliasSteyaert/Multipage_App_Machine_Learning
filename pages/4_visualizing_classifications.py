@@ -11,11 +11,15 @@ from sklearn.metrics import roc_curve, auc
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.preprocessing import label_binarize
 from sklearn.metrics import precision_recall_curve
+from sklearn.model_selection import learning_curve
+
 
 
 from sklearn.tree import export_graphviz
 from sklearn.tree import plot_tree
 import graphviz
+import xgboost as xgb
+import shap
 
 st.set_page_config(page_title="Visualizing The Classifications")
 st.markdown("# Visualizing the classification")
@@ -40,12 +44,9 @@ if 'Classification_type' in st.session_state:
     pca_components = st.session_state.pca_components
     # selected_scores_indices = st.session_state.selected_scores_indices
     pca_options = [f"PC{i+1}" for i in range(X_train_resampled.shape[1])]
-
     n_classes = len(classes)
-    if n_classes == 2:
-        feature_importances = st.session_state.feature_importances
-    else:
-        pass
+    feature_importances = st.session_state.feature_importances
+    X_test_pca = st.session_state.X_test_pca
 
     st.write(Classification_type)
     if Classification_type == "Random Forest Classifier":
@@ -200,6 +201,68 @@ if 'Classification_type' in st.session_state:
         #ax.set_ylabel("Coefficient Value")
         #st.pyplot(fig)
 
+    elif Classification_type == "XGBoost":
+        st.write ("Processing the data with the Xtreme Gradient Boosting technique:")
+
+        st.write("Confusion Matrix:")
+        st.table(conf_matrix)
+
+        st.write("Classification Report:")
+        st.table(report_df)    
+        # Feature Importance Plot
+        #st.write("Feature Importance Plot:")
+        ## Create the plot
+        #fig, ax = plt.subplots(figsize=(10, 8))
+        #xgb.plot_importance(model, importance_type='gain', max_num_features=20, ax=ax)  # Display top 20 features and 'gain': This calculates feature importance based on the average improvement in loss when a feature is used in splits across all trees. It's a measure of how much the feature contributes to the model's performance.
+        #ax.set_title('Feature Importance - XGBoost')
+        #
+        ## Display the plot in Streamlit
+        #st.pyplot(fig)
+
+        # Get PCA components and explained variance ratio
+        loadings = pd.DataFrame(
+            np.abs(pca_components),
+            columns=gene_names
+        )
+
+        # Calculate feature importance by summing absolute loadings across components
+        feature_importance = loadings.sum(axis=0).sort_values(ascending=False)
+
+        # Plot the top 20 features
+        st.write("Feature Importance - PCA")
+        fig, ax = plt.subplots(figsize=(10, 8))
+        feature_importance.head(20).plot(kind='bar', ax=ax, color='skyblue', edgecolor='black')
+        ax.set_title("Top 20 Feature Importances (PCA)")
+        ax.set_ylabel("Cumulative Absolute Loadings")
+        ax.set_xlabel("Features")
+        plt.xticks(rotation=45, ha="right")
+        plt.tight_layout()
+
+        # Display the plot
+        st.pyplot(fig)
+
+        # Compute learning curve
+        train_sizes, train_scores, test_scores = learning_curve(model, X_train_resampled, y_train_resampled, cv=5)
+
+        # Create plot
+        fig, ax = plt.subplots(figsize=(8, 6))
+        ax.plot(train_sizes, train_scores.mean(axis=1), label='Training score')
+        ax.plot(train_sizes, test_scores.mean(axis=1), label='Cross-validation score')
+        ax.set_xlabel('Number of training samples')
+        ax.set_ylabel('Accuracy')
+        ax.set_title('Learning Curve')
+        ax.legend(loc='best')
+
+        # Display plot in Streamlit
+        st.pyplot(fig)
+
+
+        explainer = shap.Explainer(model)
+        shap_values = explainer.shap_values(X_test_pca)  # Use X_test_pca if PCA was applied before the model
+        shap.summary_plot(shap_values, X_test_pca)  # Same for the summary plot, use X_test_pca
+        st.write("SHAP (SHapley Additive exPlanation) values:")
+        st.pyplot(plt)
+
     elif Classification_type == "One Vs Rest Classifier":
         st.write("Processing the data with the One VS Rest Classifier:")
 
@@ -212,13 +275,18 @@ if 'Classification_type' in st.session_state:
         y_test_binarized = label_binarize(y_test, classes=classes)
         fig, ax = plt.subplots()        
 
-        for i, class_label in enumerate(classes):
-            precision, recall, _ = precision_recall_curve(y_test_binarized[:, i], y_pred_proba[:, i])
-            ax.plot(recall, precision, lw=2, label=f"Class {class_label}")
+        if n_classes == 2:
+            precision, recall, _ = precision_recall_curve(y_test_binarized, y_pred_proba)
+            ax.plot(recall, precision, lw=2, label="Positive Class")
+
+        else:
+            for i, class_label in enumerate(classes):
+                precision, recall, _ = precision_recall_curve(y_test_binarized[:, i], y_pred_proba[:, i])
+                ax.plot(recall, precision, lw=2, label=f"Class {class_label}")
 
         ax.set_xlabel("Recall")
         ax.set_ylabel("Precision")
-        ax.set_title("Precision-Recall Curve for Multiclass Classification")
+        ax.set_title("Precision-Recall Curve")
         ax.legend(loc="lower left")
         # ax.set_show()
         st.pyplot(fig)
