@@ -319,7 +319,9 @@ if "data" in st.session_state and st.session_state["data"] is not None:
     st.session_state.gene_names = gene_names
     st.session_state.y_train_resampled = y_train_resampled
     st.session_state.X_train_resampled = X_train_resampled
+    st.session_state.X_train_pca = X_train_pca
     st.session_state.y_test = y_test
+    st.session_state.label_encoder = label_encoder
     st.session_state.pca_components = pca.components_
     st.session_state.n_components = n_components
     st.session_state.X_test_pca = X_test_pca
