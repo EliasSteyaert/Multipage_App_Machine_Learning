@@ -4,12 +4,6 @@ import numpy as np
 import pandas as pd
 
 from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
-from sklearn.feature_selection import mutual_info_classif
-from imblearn.over_sampling import SMOTE
-from imblearn.over_sampling import ADASYN
-from collections import Counter
-from sklearn.preprocessing import MinMaxScaler
 from sklearn.decomposition import PCA
 from sklearn.metrics import confusion_matrix,classification_report,accuracy_score,recall_score,precision_score,f1_score 
 from sklearn.metrics import roc_curve,auc
@@ -53,7 +47,9 @@ if "data" in st.session_state and st.session_state["data"] is not None:
     classes = st.session_state.classes
     labels = st.session_state.labels
     gene_names = st.session_state.gene_names
+    label_encoder = st.session_state.label_encoder
     y_test = st.session_state.y_test
+    pca = st.session_state.pca
     pca_components = st.session_state.pca_components
     n_components = st.session_state.n_components
     X_test_pca = st.session_state.X_test_pca
@@ -89,7 +85,6 @@ if "data" in st.session_state and st.session_state["data"] is not None:
         model= LogisticRegression(C=1, class_weight='balanced', penalty='l1', solver='liblinear')
         model.fit(X_train_resampled,y_train_resampled)
         y_pred = model.predict(X_test_pca)
-
 
         # Evaluate the model
         accuracy_train = accuracy_score(y_train_resampled, model.predict(X_train_resampled))
@@ -162,25 +157,10 @@ if "data" in st.session_state and st.session_state["data"] is not None:
 
         # Extract feature importances from the random forest model
         pca_importances = model.feature_importances_
+
         # Map to original features using PCA components
-        original_importances = np.dot(pca_components.T, pca_importances)
+        original_importances = np.abs(np.dot(pca_components.T, pca_importances))
 
-        ## Create a DataFrame of feature importances
-        #feature_importances_df = pd.DataFrame({
-        #    "Feature": [f"PC{i+1}" for i in range(X_train_pca.shape[1])],
-        #    "Importance": feature_importances
-        #}).sort_values(by="Importance", ascending=False)
-        #st.session_state.pca_options = [f"PC{i+1}" for i in range(X_train_pca.shape[1])]
-
-        ## Display top features in a table
-        #st.table(feature_importances_df.head(20))  # Show top 20 features
-#
-        ## Visualize the top features in a bar plot
-        #plt.figure(figsize=(10, 6))
-        #plt.barh(feature_importances_df['Feature'][:20], feature_importances_df['Importance'][:20])  # top 20 features
-        #plt.xlabel('Feature Importance')
-        #plt.title('Random Forest Feature Importances')
-        #st.pyplot(plt)
 
     elif Classification_type == "XGBoost":
         st.write("Choose this classification type when you want a powerful and efficient model that excels with complex and high-dimensional data. XGBoost (Extreme Gradient Boosting) is particularly well-suited for classification tasks where accuracy is crucial, and the relationships between features and target are non-linear.")
@@ -301,8 +281,6 @@ if "data" in st.session_state and st.session_state["data"] is not None:
             "Importance": pca_importances
         }).sort_values(by="Importance", ascending=False)
 
-        st.write("The feature importances:")
-        st.table(pca_importances_df.head(20))  # Show top 20 features
         # Visualize the top features in a bar plot
         plt.figure(figsize=(10, 6))
         plt.barh(pca_importances_df['PCA'][:20], pca_importances_df['Importance'][:20])  # top 20 features
@@ -350,6 +328,21 @@ if "data" in st.session_state and st.session_state["data"] is not None:
         )
         st.plotly_chart(fig)
 
+        # Assuming original_importances contains the mapped importance values from PCA to original features
+        top_genes_indices = np.argsort(np.abs(original_importances))[::-1][:20]  # Top 20 genes
+        top_gene_names = [gene_names[i] for i in top_genes_indices]  # Replace 'gene_names' with your actual gene list
+        top_gene_values = original_importances[top_genes_indices]
+
+        # Plot
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.bar(top_gene_names, top_gene_values)
+        ax.set_title("Top 20 Gene Importances")
+        ax.set_xlabel("Gene Names")
+        ax.set_ylabel("Feature Importance (Impurity Reduction)")
+        ax.tick_params(axis='x', rotation=90)  # Ensure vertical labels
+        plt.xticks(rotation=90)  # This ensures proper vertical alignment as a fallback
+        st.pyplot(fig)
+
         st.write("Visualizing an Individual Decision Tree:")
 
         # Select one tree from the Random Forest
@@ -373,107 +366,178 @@ if "data" in st.session_state and st.session_state["data"] is not None:
         st.write("Classification Report:")
         st.table(report_df)
 
-        st.write("Coefficients Visualization:")
-        coef = model.coef_[0]
-        # coef_length = len(coef)
-        # aligned_gene_names = [gene_names[i] for i in selected_scores_indices[:coef_length]]
-        # st.write(coef)
+        # Get explained variance ratio (same for binary and multiclass)
+        explained_variance = pca.explained_variance_ratio_
+
+        # Plotting the explained variance ratio for each PCA component
         fig, ax = plt.subplots(figsize=(10, 6))
-        ax.bar(range(X_train_resampled.shape[1]), coef)
-        ax.set_xticks(range(X_train_resampled.shape[1]))
-        ax.set_xticklabels([f"PC{i+1}" for i in range(X_train_resampled.shape[1])], rotation=90)
-        ax.set_title("Logistic Regression (L1) Coefficients")
-        ax.set_xlabel("PCA's")
-        ax.set_ylabel("Coefficient Value")
-        st.pyplot(fig)
+        ax.bar(range(1, len(explained_variance) + 1), explained_variance, color='skyblue')
 
-        pca_component = st.selectbox("Select PCA component to visualize:", [f"PC{i+1}" for i in range(X_train_resampled.shape[1])])
-        # Get the index of the selected PCA component (e.g., PC1 -> index 0)
-        pca_index = int(pca_component[2:]) - 1  # e.g., "PC1" -> 0, "PC2" -> 1, etc.
-        
-        # Extract the loadings (coefficients) for the selected PCA
-        pca_component_loadings = pca_components[pca_index]    
-
-        # Create a DataFrame of the loadings (coefficients) of genes for the selected PCA component
-        gene_contributions = pd.DataFrame(pca_component_loadings, index=gene_names, columns=['Contribution'])
-        # Plot the bar chart with Plotly
-        fig = px.bar(
-            gene_contributions,
-            x=gene_contributions.index,
-            y='Contribution',
-            title=f"Gene Contributions to {pca_component}",
-            labels={'x': 'Genes', 'Contribution': 'Coefficient Value'},
-            hover_name=gene_contributions.index,  # Show gene name on hover
-            template='plotly_white',
-        )
-        
-        # Update the layout
-        fig.update_layout(
-            xaxis_title="Genes",  # Set the x-axis title
-            yaxis_title="Contribution Value",  # Set the y-axis title
-            xaxis_tickangle=-45,  # Rotate x-axis labels if needed
-            xaxis=dict(tickmode='array', tickvals=[], ticktext=[]),  # Remove x-axis tick labels
-        )
+        # Add labels and title
+        ax.set_xticks(range(1, len(explained_variance) + 1))
+        ax.set_xticklabels([f'PC{i}' for i in range(1, len(explained_variance) + 1)], rotation=90)
+        ax.set_title('PCA Components Explained Variance')
+        ax.set_xlabel('PCA Component')
+        ax.set_ylabel('Explained Variance Ratio')
 
         # Display the plot in Streamlit
-        st.plotly_chart(fig)
-
-
-        # Top 20 genes and there contribution plote
-        # Assuming pca is your trained PCA object
-        gene_contributions = np.dot(model.coef_, pca_components)    
-
-        # Visualize the top gene contributions
-        top_genes_indices = np.argsort(np.abs(gene_contributions[0]))[::-1][:20]  # Top 20 genes
-        top_gene_names = [gene_names[i] for i in top_genes_indices]
-        top_gene_values = gene_contributions[0][top_genes_indices]
-
-        # Plot
-        fig, ax = plt.subplots(figsize=(10, 6))
-        ax.bar(top_gene_names, top_gene_values)
-        ax.set_title("Top Gene Contributions After PCA")
-        ax.set_xlabel("Gene Names")
-        ax.set_ylabel("Contribution Value")
-        plt.xticks(rotation=90)
         st.pyplot(fig)
 
-        #gene_contributions = np.dot(pca_components.T, coef)
-        #fig, ax = plt.subplots(figsize=(10, 6))
-        #ax.bar(range(len(gene_contributions)), gene_contributions)
-        #ax.set_xticks(range(len(gene_contributions)))
-        #ax.set_xticklabels(gene_names, rotation=90)  # Use actual gene names
-        #ax.set_title("Logistic Regression Coefficients (Mapped to Genes)")
-        #ax.set_xlabel("Gene Names")
-        #ax.set_ylabel("Coefficient Value")
-        #st.pyplot(fig)
+        st.write("Coefficients Visualization:")
+        if n_classes == 2:
+            # Get the coefficients in PCA-transformed space
+            coefficients = model.coef_.flatten() # Shape: (n_classes, n_components)
+            original_importances = np.dot(coefficients, pca_components)
+            fig, ax = plt.subplots(figsize=(10, 6))
+            ax.bar(range(len(coefficients)), coefficients)  # Use 1D array for bar heights
+            ax.set_xticks(range(len(coefficients)))
+            ax.set_xticklabels([f"PC{i+1}" for i in range(len(coefficients))], rotation=90)
+            ax.set_title("Logistic Regression (L1) Coefficients")
+            ax.set_xlabel("PCA components")
+            ax.set_ylabel("Coefficient Value")
+            st.pyplot(fig)
+
+            pca_component = st.selectbox("Select PCA component to visualize:", [f"PC{i+1}" for i in range(X_train_resampled.shape[1])])
+            # Get the index of the selected PCA component (e.g., PC1 -> index 0)
+            pca_index = int(pca_component[2:]) - 1  # e.g., "PC1" -> 0, "PC2" -> 1, etc.
+
+            # Extract the loadings (coefficients) for the selected PCA
+            pca_component_loadings = pca_components[pca_index]    
+
+            # Create a DataFrame of the loadings (coefficients) of genes for the selected PCA component
+            gene_contributions = pd.DataFrame(pca_component_loadings, index=gene_names, columns=['Contribution'])
+            # Plot the bar chart with Plotly
+            fig = px.bar(
+                gene_contributions,
+                x=gene_contributions.index,
+                y='Contribution',
+                title=f"Gene Contributions to {pca_component}",
+                labels={'x': 'Genes', 'Contribution': 'Coefficient Value'},
+                hover_name=gene_contributions.index,  # Show gene name on hover
+                template='plotly_white',
+            )
+
+            # Update the layout
+            fig.update_layout(
+                xaxis_title="Genes",  # Set the x-axis title
+                yaxis_title="Contribution Value",  # Set the y-axis title
+                xaxis_tickangle=-45,  # Rotate x-axis labels if needed
+                xaxis=dict(tickmode='array', tickvals=[], ticktext=[]),  # Remove x-axis tick labels
+            )
+            # Display the plot in Streamlit
+            st.plotly_chart(fig)
+
+            top_genes_indices = np.argsort(np.abs(original_importances))[::-1][:20]  # Top 20 genes
+            top_gene_names = [gene_names[i] for i in top_genes_indices]
+            top_gene_values = original_importances[top_genes_indices]
+            # Plot
+            fig, ax = plt.subplots(figsize=(10, 6))
+            ax.bar(top_gene_names, top_gene_values)
+            ax.set_title("Top Gene Contributions After PCA")
+            ax.set_xlabel("Gene Names")
+            ax.set_ylabel("Contribution Value")
+            plt.xticks(rotation=90)
+            st.pyplot(fig)
+            
+        else:
+            coefficients = model.coef_
+            original_importances = np.dot(coefficients, pca_components)  # Multiply transposed coefficients with PCA components
+
+            fig, ax = plt.subplots(figsize=(10, 6))
+            
+            for i in range(coefficients.shape[0]):  # Loop through each class
+                ax.bar(range(coefficients.shape[1]), coefficients[i, :], label=f"Class {i+1}")
+
+            ax.set_xticks(range(coefficients.shape[1])) 
+            ax.set_xticklabels([f"PC{i+1}" for i in range(coefficients.shape[1])], rotation=90)
+            ax.set_title("Logistic Regression (L1) Coefficients by Class")
+            ax.set_xlabel("PCA Components")
+            ax.set_ylabel("Coefficient Value")
+            ax.legend()
+            st.pyplot(fig)
+
+
+            # Compute combined importance for all classes
+            absolute_importances = np.abs(original_importances)  # Absolute values of contributions
+            combined_importance = np.sum(absolute_importances, axis=0)  # Sum across all classes
+            
+            # Add "All Classes Combined" to the class options
+            class_options = [f"Class {i+1}" for i in range(coefficients.shape[0])]
+            class_options.append("All Classes Combined")  # Add the combined option
+            
+            # Create the selectbox
+            selected_option = st.selectbox("Choose a class to investigate or view combined contributions:", class_options)
+            
+            # Determine the behavior based on the selection
+            if selected_option == "All Classes Combined":
+                # Top 20 genes for all classes combined
+                top_genes_indices = np.argsort(combined_importance)[::-1][:20]  # Indices of top 20 genes
+                top_gene_names = [gene_names[i] for i in top_genes_indices]  # Gene names
+                top_gene_values = combined_importance[top_genes_indices]  # Contribution values
+            
+                # Plot the combined contributions
+                fig, ax = plt.subplots(figsize=(10, 6))
+                ax.bar(top_gene_names, top_gene_values)
+                ax.set_title("Top 20 Gene Contributions Across All Classes")
+                ax.set_xlabel("Gene Names")
+                ax.set_ylabel("Combined Contribution Value")
+                plt.xticks(rotation=90)
+                st.pyplot(fig)
+            
+            else:
+                # Extract the class index
+                class_index = int(selected_option.split(" ")[1]) - 1  # "Class 1" -> index 0
+            
+                # Top 20 genes for the selected class
+                top_genes_indices = np.argsort(np.abs(original_importances[class_index]))[::-1][:20]
+                top_gene_names = [gene_names[i] for i in top_genes_indices]
+                top_gene_values = original_importances[class_index][top_genes_indices]
+            
+                # Plot the contributions for the selected class
+                fig, ax = plt.subplots(figsize=(10, 6))
+                ax.bar(top_gene_names, top_gene_values)
+                ax.set_title(f"Top 20 Gene Contributions for {selected_option}")
+                ax.set_xlabel("Gene Names")
+                ax.set_ylabel("Contribution Value")
+                plt.xticks(rotation=90)
+                st.pyplot(fig)
 
     elif Classification_type == "XGBoost":
         st.write ("")
-        feature_importances = st.session_state.feature_importances
         st.write("Confusion Matrix:")
         st.table(conf_matrix)
 
         st.write("Classification Report:")
         st.table(report_df)    
-        # Feature Importance Plot
-        #st.write("Feature Importance Plot:")
-        ## Create the plot
-        #fig, ax = plt.subplots(figsize=(10, 8))
-        #xgb.plot_importance(model, importance_type='gain', max_num_features=20, ax=ax)  # Display top 20 features and 'gain': This calculates feature importance based on the average improvement in loss when a feature is used in splits across all trees. It's a measure of how much the feature contributes to the model's performance.
-        #ax.set_title('Feature Importance - XGBoost')
-        #
-        ## Display the plot in Streamlit
-        #st.pyplot(fig)
+
+        # Get explained variance ratio (same for binary and multiclass)
+        explained_variance = pca.explained_variance_ratio_
+
+        # Plotting the explained variance ratio for each PCA component
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.bar(range(1, len(explained_variance) + 1), explained_variance, color='skyblue')
+
+        # Add labels and title
+        ax.set_xticks(range(1, len(explained_variance) + 1))
+        ax.set_xticklabels([f'PC{i}' for i in range(1, len(explained_variance) + 1)], rotation=90)
+        ax.set_title('PCA Components Explained Variance')
+        ax.set_xlabel('PCA Component')
+        ax.set_ylabel('Explained Variance Ratio')
+
+        # Display the plot in Streamlit
+        st.pyplot(fig)
+
+         # Map feature importances back to original features
+        pca_importances = model.feature_importances_
+        original_importances = np.dot(pca_components.T, pca_importances)
 
         # Get PCA components and explained variance ratio
         loadings = pd.DataFrame(
             np.abs(pca_components),
             columns=gene_names
         )
-
         # Calculate feature importance by summing absolute loadings across components
         feature_importance = loadings.sum(axis=0).sort_values(ascending=False)
-
         # Plot the top 20 features
         st.write("Feature Importance - PCA")
         fig, ax = plt.subplots(figsize=(10, 8))
@@ -483,9 +547,9 @@ if "data" in st.session_state and st.session_state["data"] is not None:
         ax.set_xlabel("Features")
         plt.xticks(rotation=45, ha="right")
         plt.tight_layout()
-
         # Display the plot
         st.pyplot(fig)
+            
 
         # Compute learning curve
         train_sizes, train_scores, test_scores = learning_curve(model, X_train_resampled, y_train_resampled, cv=5)
@@ -502,29 +566,6 @@ if "data" in st.session_state and st.session_state["data"] is not None:
         # Display plot in Streamlit
         st.pyplot(fig)
 
-
-        explainer = shap.Explainer(model, X_train_resampled)
-        shap_values = explainer.shap_values(X_test_pca)  # Use X_test_pca if PCA was applied before the model
-        plt.clf() 
-        shap.summary_plot(shap_values, X_test_pca, show=False)  # Same for the summary plot, use X_test_pca
-        st.write("SHAP (SHapley Additive exPlanation) values:")
-        st.pyplot(plt)
-
-        # 2. SHAP Dependence Plot
-        # Select a feature (e.g., a PCA component) to visualize
-        pca_component = st.selectbox("Select PCA component to visualize:", [f"PC{i+1}" for i in range(X_train_resampled.shape[1])])
-        pca_index = int(pca_component[2:]) - 1  # e.g., "PC1" -> 0, "PC2" -> 1, etc.
-
-        st.write(f"SHAP Dependence Plot for {pca_component}:")
-        shap.dependence_plot(pca_index, shap_values, X_test_pca, feature_names=[f"PC{i+1}" for i in range(X_test_pca.shape[1])])
-        st.pyplot(plt)
-
-        # 3. SHAP Force Plot for a sample (optional)
-        # Select a sample (e.g., the first sample) to visualize
-        st.write("SHAP Force Plot for the first sample:")
-        shap.force_plot(shap_values[0].values, shap_values[0].base_values, shap_values[0].data, show=False)
-        st.pyplot(plt)
-
     elif Classification_type == "One Vs Rest Classifier":
         st.write("Processing the data with the One VS Rest Classifier:")
 
@@ -534,33 +575,184 @@ if "data" in st.session_state and st.session_state["data"] is not None:
         st.write("Classification Report:")
         st.table(report_df)
 
-        y_test_binarized = label_binarize(y_test, classes=classes)
-        fig, ax = plt.subplots()        
+        # Get explained variance ratio (same for binary and multiclass)
+        explained_variance = pca.explained_variance_ratio_
 
-        if n_classes == 2:
-            precision, recall, _ = precision_recall_curve(y_test_binarized, y_pred_proba)
-            ax.plot(recall, precision, lw=2, label="Positive Class")
+        # Plotting the explained variance ratio for each PCA component
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.bar(range(1, len(explained_variance) + 1), explained_variance, color='skyblue')
 
-        else:
-            for i, class_label in enumerate(classes):
-                precision, recall, _ = precision_recall_curve(y_test_binarized[:, i], y_pred_proba[:, i])
-                ax.plot(recall, precision, lw=2, label=f"Class {class_label}")
+        # Add labels and title
+        ax.set_xticks(range(1, len(explained_variance) + 1))
+        ax.set_xticklabels([f'PC{i}' for i in range(1, len(explained_variance) + 1)], rotation=90)
+        ax.set_title('PCA Components Explained Variance')
+        ax.set_xlabel('PCA Component')
+        ax.set_ylabel('Explained Variance Ratio')
 
-        ax.set_xlabel("Recall")
-        ax.set_ylabel("Precision")
-        ax.set_title("Precision-Recall Curve")
-        ax.legend(loc="lower left")
-        # ax.set_show()
+        # Display the plot in Streamlit
         st.pyplot(fig)
 
-    st.write("ROC curve and AUC:")
+        if n_classes == 2:
+            # Get the feature importances for the Random Forest model
+            feature_importances = model.estimators_[0].feature_importances_  # Use the first estimator for a binary classifier
+
+            # This will give us the original feature importances in the PCA space
+            original_feature_importances = np.dot(pca_components.T, feature_importances)
+
+            # Create a DataFrame with the original feature names and importances
+            importance_df = pd.DataFrame({
+                "Feature": gene_names,  # List of original feature names (genes)
+                "Importance": np.abs(original_feature_importances)
+            })
+
+            # Sort by importance and get the top 20 features
+            importance_df_sorted = importance_df.sort_values(by="Importance", ascending=False).head(20)
+
+
+            # Plot the top 20 most important features (vertical bars)
+            fig, ax = plt.subplots(figsize=(10, 6))
+            importance_df_sorted.plot(kind='bar', x='Feature', y='Importance', legend=False, ax=ax)
+
+            # Set plot title and labels
+            plt.title("Top 20 Important Genes")
+            plt.ylabel("Importance")
+            plt.xlabel("Feature")
+
+            # Rotate the x-axis labels to be vertical
+            plt.xticks(rotation=90)
+
+            # Display the plot in Streamlit
+            st.pyplot(fig)
+        else:
+            # Create an empty dictionary to store importances for each class
+            importances_dict = {}
+            # Create selectbox to choose class or combined importance
+            class_options = list(label_encoder.classes_) + ["All Classes Combined"]
+            selected_option = st.selectbox(
+                "Choose a class to investigate or view combined contributions:", class_options
+            )
+            if selected_option == "All Classes Combined":
+                # Loop over all the classes (estimators) and calculate the feature importances
+                for idx, estimator in enumerate(model.estimators_):
+                    # Get the feature importances for this class (shape: 8)
+                    class_importances = estimator.feature_importances_
+
+                    # Project the importances back to the original features
+                    original_feature_importances = np.dot(pca_components.T, class_importances)  # Shape: (300,)
+
+                    # Store the importances in the dictionary
+                    importances_dict[f'Class_{idx}'] = original_feature_importances
+                # Calculate combined feature importance by averaging across all classes
+                combined_importance = np.mean(np.array(list(importances_dict.values())), axis=0)
+
+                # Create a DataFrame to hold the feature importances and their corresponding original feature names
+                importance_df = pd.DataFrame({
+                    "Feature": gene_names,  # Original feature names (length 300)
+                    "Importance": combined_importance  # Combined feature importance for all classes
+                })
+
+                # Sort the DataFrame by importance and select the top 20 features
+                importance_df_sorted = importance_df.sort_values(by="Importance", ascending=False).head(20)
+
+                # Visualize the top 20 features using a vertical bar plot
+                fig, ax = plt.subplots(figsize=(10, 6))
+                importance_df_sorted.plot(kind='bar', x='Feature', y='Importance', legend=False, ax=ax)
+
+                # Rotate the x-axis labels vertically for better readability
+                plt.xticks(rotation=90)
+
+                # Add titles and labels
+                plt.title(f"Top 20 Important Features for All Classes Combined")
+                plt.xlabel("Feature")
+                plt.ylabel("Importance")
+
+                # Display the plot
+                st.pyplot(fig)
+
+            else:
+                # Convert the selected class name to the appropriate encoded value
+                selected_class_encoded = label_encoder.transform([selected_option])[0]
+
+                # Loop over all the classes (estimators) and calculate the feature importances
+                for idx, estimator in enumerate(model.estimators_):
+                    # Get the feature importances for this class (shape: 8)
+                    if idx == selected_class_encoded:
+                        # Get the feature importances for this class (shape: 8)
+                        class_importances = estimator.feature_importances_
+
+                        # Project the importances back to the original features
+                        original_feature_importances = np.dot(pca_components.T, class_importances)  # Shape: (300,)
+
+                        # Store the importances in the dictionary for the selected class
+                        importances_dict[f'Class_{selected_class_encoded}'] = original_feature_importances
+
+                        # Create a DataFrame to hold the feature importances and their corresponding original feature names
+                        importance_df = pd.DataFrame({
+                            "Feature": gene_names,  # Original feature names
+                            "Importance": original_feature_importances  # Feature importances for the selected class
+                        })
+
+                        # Sort the DataFrame by importance and select the top 20 features
+                        importance_df_sorted = importance_df.sort_values(by="Importance", ascending=False).head(20)
+
+                        # Visualize the top 20 features using a vertical bar plot
+                        fig, ax = plt.subplots(figsize=(10, 6))
+                        importance_df_sorted.plot(kind='bar', x='Feature', y='Importance', legend=False, ax=ax)
+    
+                        # Rotate the x-axis labels vertically for better readability
+                        plt.xticks(rotation=90)
+
+                        # Add titles and labels
+                        plt.title(f"Top 20 Important Features for {selected_option}")
+                        plt.xlabel("Feature")
+                        plt.ylabel("Importance")
+
+                        # Display the plot
+                        st.pyplot(fig)
+                        break  # Exit the loop once the correct class is found and processed
+
+
     if n_classes == 2:
-        # Predictions and Probabilities for ROC
+        pass
+    else: 
+        # Display class-label mapping table
+        class_label_df = pd.DataFrame({
+            'Class Label': range(len(labels)),
+            'Class Name': labels
+        })
+        st.write("Class-Label Mapping Table:")
+        st.write(class_label_df)
+
+    # Precision-Recall Curve
+    st.write("Precision-Recall Curve:")
+    fig, ax = plt.subplots()
+
+    # Binarize the true labels for Precision-Recall
+    y_test_binarized = label_binarize(y_test, classes=classes)
+
+    if n_classes == 2:
+        precision, recall, _ = precision_recall_curve(y_test_binarized, y_pred_proba)
+        ax.plot(recall, precision, lw=2, label="Positive Class")
+    else:
+        for i, class_label in enumerate(classes):
+            precision, recall, _ = precision_recall_curve(y_test_binarized[:, i], y_pred_proba[:, i])
+            ax.plot(recall, precision, lw=2, label=f"{class_label}")  # Use class names here
+
+    ax.set_xlabel("Recall")
+    ax.set_ylabel("Precision")
+    ax.set_title("Precision-Recall Curve")
+    ax.legend(loc="lower left")
+    st.pyplot(fig)
+
+    # ROC Curve and AUC
+    st.write("ROC curve and AUC:")
+    fig, ax = plt.subplots()
+
+    if n_classes == 2:
+        # Binary Classification
         fpr, tpr, thresholds = roc_curve(y_test, y_pred_proba)
         roc_auc = auc(fpr, tpr)
-        # Plot ROC Curve
-        fig, ax = plt.subplots()
-        ax.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (area = {roc_auc:.2f})')
+        ax.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (AUC = {roc_auc:.2f})')
         ax.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
         ax.set_xlim([0.0, 1.0])
         ax.set_ylim([0.0, 1.05])
@@ -568,34 +760,24 @@ if "data" in st.session_state and st.session_state["data"] is not None:
         ax.set_ylabel('True Positive Rate')
         ax.set_title('Receiver Operating Characteristic (ROC) Curve')
         ax.legend(loc='lower right')
-
-
     else:
-        # Initialize plot
-        fig, ax = plt.subplots()
-        # Identify unique classes
-        classes = sorted(set(y_test))
-        n_classes = len(classes)
+        # Multiclass Classification
+        y_test_binarized = label_binarize(y_test, classes=classes)  # Binarize the labels for multiclass
 
-        # Binarize the true labels for multiclass ROC
-        y_test_binarized = label_binarize(y_test, classes=classes)
-        # Multiclass handling
-        if n_classes > 2:
-            # Compute ROC curve and AUC for each class
-            for i, class_label in enumerate(classes):
-                fpr, tpr, _ = roc_curve(y_test_binarized[:, i], y_pred_proba[:, i])
-                roc_auc = auc(fpr, tpr)
-                ax.plot(fpr, tpr, lw=2, label=f'Class {class_label} (AUC = {roc_auc:.2f})')
-            ax.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (area = {roc_auc:.2f})')
-            ax.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
-            ax.set_xlim([0.0, 1.0])
-            ax.set_ylim([0.0, 1.05])
-            ax.set_xlabel('False Positive Rate')
-            ax.set_ylabel('True Positive Rate')
-            ax.set_title('Receiver Operating Characteristic (ROC) Curve')
-            ax.legend(loc='lower right')
+        for i, class_label in enumerate(classes):  # Iterate over class names
+            fpr, tpr, _ = roc_curve(y_test_binarized[:, i], y_pred_proba[:, i])
+            roc_auc = auc(fpr, tpr)
+            ax.plot(fpr, tpr, lw=2, label=f'{class_label} (AUC = {roc_auc:.2f})')  # Use class names here
+
+        ax.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')  # Diagonal line
+        ax.set_xlim([0.0, 1.0])
+        ax.set_ylim([0.0, 1.05])
+        ax.set_xlabel('False Positive Rate')
+        ax.set_ylabel('True Positive Rate')
+        ax.set_title('Receiver Operating Characteristic (ROC) Curve')
+        ax.legend(loc='lower right')
+
     st.pyplot(fig)
-
 
 else:
     st.error("The data is not ready for machine learning. Please upload and process your data on the previous page.")
