@@ -48,30 +48,11 @@ else:
                except Exception as e:
                    st.error(f"Error loading {file_name}: {e}")
 
-	    # Step 2: Data processing when the user uploaded only one file
-       #if len(uploaded_files) == 1:
-       #     with st.expander("Single File Processing", expanded=True):
-       #         # Placeholder: Replace with the actual loaded DataFrame
-       #         data = pd.DataFrame()  # file_settings[single_file_name]["dataframe"]
-#
-       #         # Radio button to select orientation
-       #         st.write("Is each sample data given in columns or rows?")
-       #         sample_orientation = st.radio("Select orientation", options=["Sample data in columns", "Sample data in rows"])
-# DATA PREPROCESSING WHEN USER UPLOADS ONLY ONE FILE
        if len(uploaded_files) == 1:
            with st.expander("Single File Processing", expanded=True):
                single_file_name = file_names[0]
                data_one_file = file_settings[single_file_name]["dataframe"]
 
-               ## Radio button for single selection between two options
-               #st.write("Is each sample data given in columns or rows?")
-               #sample_orientation = st.radio("Select orientation", options=["Sample data in columns", "Sample data in rows"])
-
-               #if sample_orientation == "Sample data in columns":
-                #   st.write("Processing data where each sample is in a column:")
-                   
-
-               #elif sample_orientation == "Sample data in rows":
                st.write("Processing data where each sample is in a row:")
 
                # Request user inputs for row-based identifiers
@@ -209,15 +190,6 @@ else:
                    if rename_dict:  # Check if there's any column to rename
                        topTables.rename(columns=rename_dict, inplace=True)
 
-                   ## Step 4: Create a new DataFrame with only the relevant columns
-                   #cpm_columns = topTables[new_column_names].copy()  # Copy only the renamed columns
-                   #relevant_columns = pd.concat([topTables[[gene_name]], cpm_columns], axis=1)  # Include the gene name column
-                   ## Reset the index to remove the default index
-                   #relevant_columns.reset_index(drop=True, inplace=True)
-                   ##st.write("Relevant Columns After Adjustments:", relevant_columns.head(), use_container_width=True)
-	    			##ENDING ON TRYING TO DELETE THE GHOST COLUMN AT THE RELEVENT COLUMNS PART
-
-
 	    			#converting to one "data" dataframe
                    # Step 1: Set the 'Sample_ID' as index in `table1`
                    targets.set_index(sample_id_col, inplace=True)
@@ -256,10 +228,6 @@ else:
                    st.write(data.shape)
                else:
                     st.error("One or more of the specified columns do not exist in the database")
-
-	    			# Optionally, store relevant_columns in a variable for further use
-                   # This could be done for further processing or machine learning steps
-
 
 if st.button("Next page"):
     switch_page("volcano plot")
