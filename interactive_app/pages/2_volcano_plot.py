@@ -83,10 +83,6 @@ if "data" in st.session_state and st.session_state["data"] is not None:
     genes_outside_threshold = vulcano_plot_data[vulcano_plot_data['outside_threshold']]['Gene Names'].tolist()
     amount_outside_genes = len(genes_outside_threshold)
 
-    ## Display the resulting DataFrame
-    #st.write("Combined Data for Volcano Plot:")
-    #st.dataframe(vulcano_plot_data)
-
     # Volcano plot
     fig = px.scatter(
         vulcano_plot_data, 
@@ -117,8 +113,6 @@ if "data" in st.session_state and st.session_state["data"] is not None:
     genes_usage = st.radio("Select your desired option:", options=["no", "yes"])
     if genes_usage == "yes":
         st.write("Processing data where the insignifcant genes gets dropped:")  
-        # data = data.drop(genes_inside_threshold, axis=1, errors='ignore')
-        # data = data.loc[:, data.columns.isin(genes_outside_threshold)]
         # Identify the first and last columns
         first_column = data.columns[0]
         last_column = data.columns[-1]
@@ -143,10 +137,6 @@ if "data" in st.session_state and st.session_state["data"] is not None:
     column_names_list = data.columns[1:].tolist()
     column_to_check = "ensembl_gene_id"
     filtered_topTables = topTables[topTables[column_to_check].isin(column_names_list)]
-
-    # output_file = "output.csv"
-    # filtered_topTables.to_csv(output_file, index=False)  # `index=False` prevents the index column from being saved
-    # st.write(f"Data saved to {output_file}")
 
 else:
     st.error("Please complete the 'uploading data' page first.")
