@@ -1,7 +1,3 @@
-* ***0_SoftwareEnvironment**.  General and project-specific information about the used computing environments (programming languages, integrated development environments, package managers).*
-
-* ***interactive_app**. Contains all items (e.g., code, documentation, results) belonging to a specific computational analysis.*
-
 **Development of an Interactive Python Application for Machine Learning on Gene Expression Data**
 
 This project involves creating a user-friendly multipage application using Streamlit to predict cancer status based on gene expression data. The app is designed for researchers and doctors, giving them an option to upload datasets, preprocess data, and apply machine learning models with no coding knowledge. Some features include automated feature selection, customizable machine learning workflows, and visualization tools such as Random Forest feature importances and confusion matrices. The app supports dynamic adjustments to improve prediction accuracy and aims to streamline the integration of machine learning into cancer research.
