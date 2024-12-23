@@ -1,6 +1,6 @@
 * ***0_SoftwareEnvironment**.  General and project-specific information about the used computing environments (programming languages, integrated development environments, package managers).*
 
-* ***interactive_app**.  Placeholder (change to appropriate name. E.g., Preprocessing, Simulation, etc). Contains all items (e.g., code, documentation, results) belonging to a specific computational analysis.*
+* ***interactive_app**. Contains all items (e.g., code, documentation, results) belonging to a specific computational analysis.*
 
 **Development of an Interactive Python Application for Machine Learning on Gene Expression Data**
 
