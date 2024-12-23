@@ -1,0 +1,29 @@
+# Exclude data and results directories
+Data/*
+Results/*
+
+# Include README files in excluded directories
+!Data/README.md
+!Results/README.md
+
+# Exclude logs, binaries, and unnecessary formats
+*.log
+*.o
+*.so
+*.exe
+*.csv
+*.tsv
+
+# Exclude multimedia files
+*.png
+*.jpg
+*.mp4
+
+# System and temporary files
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Exclude files specific to your environment
+*.sqlite
+*.pyc
