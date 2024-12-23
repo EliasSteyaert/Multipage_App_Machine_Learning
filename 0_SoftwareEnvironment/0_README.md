@@ -68,6 +68,7 @@ no
 no
 
 **Other information about the computing environment:**
+```
 Required packages:
 graphviz==0.20.3
 imbalanced_learn==0.12.4
@@ -85,6 +86,7 @@ shap==0.46.0
 streamlit==1.40.2
 streamlit_extras==0.5.0
 xgboost==2.1.3
+```
 
 
 
