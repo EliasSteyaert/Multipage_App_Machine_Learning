@@ -24,10 +24,10 @@ This is the root directory of the app. This contains the subdirectory 'pages' an
 This folder contains the modular scripts for different parts of the computation, ensuring a separation of tasks in a logical and chronological way.
 
 **Dependencies:** 
-```
 To start using the app, run the home.py script with the following command in the CLI: 'streamlit run home.py'
-Once home.py is running, the user can navigate through the different pages of the app. The pages should be run in the following chronological order to ensure correct execution. The multipage app respects this order by listing the pages sequentially in the sidebar, and when the user presses the 'next page' button, the correct page will load:
 
+Once home.py is running, the user can navigate through the different pages of the app. The pages should be run in the following chronological order to ensure correct execution. The multipage app respects this order by listing the pages sequentially in the sidebar, and when the user presses the 'next page' button, the correct page will load:
+```
 home.py (Main entry point for the app)
 ./pages/1_data_uploading.py (Upload and transpose data)
 ./pages/2_volcano_plot.py (Generate a volcano plot for differential gene expression analysis, if applicable)
