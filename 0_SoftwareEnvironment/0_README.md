@@ -48,28 +48,24 @@ Caches (sum of all):
   L3:                     48 MiB (2 instances)
 NUMA:                     
   NUMA node(s):           1
-  NUMA node0 CPU(s):      0,1```
+  NUMA node0 CPU(s):      0,1
+```
   
 
 **Operating system:**
 Fedora Linux 38
 
-
 **Did you use conda or renv?**
 No
-
 
 **Did you export the software environment (i.e. software/package/library versions)?** [yes/no]
 no
 
-
 **Filename(s) of exported environment:**
 /
 
-
 **Did you use containerization or virtualization? If so, provide all relevant details.**
 no
-
 
 **Other information about the computing environment:**
 Required packages:
