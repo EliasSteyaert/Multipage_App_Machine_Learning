@@ -1,29 +1,24 @@
-### Processing
-
 * ***0_SoftwareEnvironment**.  General and project-specific information about the used computing environments (programming languages, integrated development environments, package managers).*
-
-* ***Data**. Raw, meta, and pre-processed data*
 
 * ***interactive_app**.  Placeholder (change to appropriate name. E.g., Preprocessing, Simulation, etc). Contains all items (e.g., code, documentation, results) belonging to a specific computational analysis.*
 
-====== TEMPLATE STARTS HERE ======
-
-**Short title + project description:** [optional]
-Development of an Interactive Python Application for Machine Learning on Gene Expression Data
+**Development of an Interactive Python Application for Machine Learning on Gene Expression Data**
 This project involves creating a user-friendly multipage application using Streamlit to predict cancer status based on gene expression data. The app is designed for researchers and doctors, giving them an option to upload datasets, preprocess data, and apply machine learning models with no coding knowledge. Some features include automated feature selection, customizable machine learning workflows, and visualization tools such as Random Forest feature importances and confusion matrices. The app supports dynamic adjustments to improve prediction accuracy and aims to streamline the integration of machine learning into cancer research.
 
-**Main contact:** [optional]
+**Main contact:** 
 Elias Steyaert:
 elias.steyaert@hotmail.com
 
-**Team:** [optional]
+**Team:**
 Aldo Jongejan: Supervisor
 Elias Steyaert: Intern
 
 
-**interactive_app**:  This is the root directory of the app. This contains the subdirectory 'pages' and the scripts 'home.py' and 'styles.py'. Home.py is the first page of the script and will be used to start the application when you write 'streamlit run home.py' on the therminal (CLI) in the fedora38 virtual box.
+**interactive_app:** 
+This is the root directory of the app. This contains the subdirectory 'pages' and the scripts 'home.py' and 'styles.py'. Home.py is the first page of the script and will be used to start the application when you write 'streamlit run home.py' on the therminal (CLI) in the fedora38 virtual box.
 
-**pages**:  This folder contains the modular scripts for different parts of the computation, ensuring a separation of tasks in a logical and chronological way.
+**pages:** 
+This folder contains the modular scripts for different parts of the computation, ensuring a separation of tasks in a logical and chronological way.
 
 **Dependencies:** 
 To start using the app, run the home.py script with the following command in the CLI:
