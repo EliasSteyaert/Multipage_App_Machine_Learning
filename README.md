@@ -50,7 +50,11 @@ First of all I'm assuming Python, pip and git is already installed into your vir
 
 If you use ubuntu instead of fedora, change the 'dnf' to 'apt' in these commands
 
-At first you need the scripts that are stored in this GitHub. Go to your virtual machine and open your terminal. Create a new directory in a directory where you want to have the interactive app. Do this with the $mkdir command. Navigate to the directory with $cd. For example I did: 'cd sf_SF' (to get in my shared folder file) and there I created my directory 'mkdir Amsterdam_UMC'.
+At first you need the scripts that are stored in this GitHub. Go to your virtual machine and open your terminal. Create a new directory in a directory where you want to have the interactive app. Do this with the $mkdir command. Navigate to the directory with $cd. For example I did: 
+```
+cd sf_SF  (to get in my shared folder file) and
+mkdir Amsterdam_UMC (to create a new directory)
+```
 
 Cloning a repository means creating a local copy of the code and files stored in a GitHub repository on your computer. This allows you to work on the project, run scripts, or make changes in your local environment without needing an internet connection.
 
@@ -59,5 +63,15 @@ Now when your prompt is in this new directory, clone this GitHub:
 git clone https://github.com/EliasSteyaert/Multipage_App_Machine_Learning.git
 ```
 
-Now if you want to run the application, navigate on your command line to the interactive_app folder (which is found in the directory you cloned this GitHub to). Perform on the command line 'pip install -r requirements.txt'. After this you should be ready to start the aplication. Stay in the same directory (interactive_app) and perform 'streamlit run home.py' this should automatically boot up a browser with the required browser/interface on it.
+Now if you want to run the application, navigate on your command line to the interactive_app folder (which is found in the directory you cloned this GitHub to). Perform on the command line:
+```
+pip install -r requirements.txt
+```
+
+After this you should be ready to start the aplication. Stay in the same directory (interactive_app) and perform:
+```
+streamlit run home.py
+```
+
+Running this should automatically boot up a browser with the required browser/interface on it.
 
