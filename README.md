@@ -17,7 +17,7 @@ Elias Steyaert: Intern
 
 **interactive_app:** 
 
-This is the root directory of the app. This contains the subdirectory 'pages' and the scripts 'home.py' and 'styles.py'. Home.py is the first page of the script and will be used to start the application when you write 'streamlit run home.py' on the therminal (CLI) in the fedora38 virtual box.
+This is the root directory of the app. This contains the subdirectory 'pages' and the scripts 'home.py' and 'styles.py'. home.py is the first page of the script and will be used to start the application when you write 'streamlit run home.py' on the terminal (CLI) in the fedora38 virtual box.
 
 **pages:** 
 
@@ -65,6 +65,7 @@ git clone https://github.com/EliasSteyaert/Multipage_App_Machine_Learning.git
 
 Now if you want to run the application, navigate on your command line to the interactive_app folder (which is found in the directory you cloned this GitHub to). Perform on the command line:
 ```
+cd interactive_app
 pip install -r requirements.txt
 ```
 
